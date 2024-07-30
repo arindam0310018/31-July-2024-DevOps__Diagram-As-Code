@@ -1,5 +1,10 @@
 # DIAGRAM AS A CODE:-
 
+| __REFERENCE URL:-__ |
+| --------- |
+| https://diagrams.mingrammer.com/ |
+| https://diagrams.mingrammer.com/docs/getting-started/installation |
+
 ## Pre-Requisites:-
 
 ### Install Below:-
