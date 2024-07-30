@@ -1,6 +1,6 @@
 # DIAGRAM AS A CODE:-
 
-## Pre-Reqs:-
+## Pre-Requisites:-
 
 ### Install Below:-
 1. Python 3.6 or higher
