@@ -1,0 +1,13 @@
+flowchart BT
+    B(Chief Cloud Officer) --> A(Chief Technology Officer)
+    C(Cloud Architect) --> B
+    D(Cloud Service Manager) --> B
+    E(Cloud Application Lead) --> B
+    C1(Devops Engineer) --> C
+    C2(IaC Developer) --> C1
+    C3(IaC Operations Engineer) --> C2
+    F(Support Engineer) --> C3
+    D1(Cloud Operations Manager) --> D
+    D2(Cloud Operations Engineer) --> D1
+    F(Support Engineer) --> D2
+    E1(Cloud Developer) --> E
