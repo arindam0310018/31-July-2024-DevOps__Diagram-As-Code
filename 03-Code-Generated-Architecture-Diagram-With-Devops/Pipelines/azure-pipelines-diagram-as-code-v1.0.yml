@@ -1,0 +1,169 @@
+####################################
+# Automation Scope:-
+#####################
+# 1. Generate Diagrams by Code.
+# 2. Commit 2 Git.
+####################################
+
+trigger:
+  none
+
+#######################
+# Declare Variables:-
+#######################
+variables:
+  ServiceConnection: 'amcloud-cicd-service-connection'
+  BuildAgent: 'windows-latest'
+  envName: 'NonProd'
+  pythonCode: 'Generate-Gaming-Arch-Diagrams.py'
+  WorkingDir: '$(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code'
+  FolderName: 'AMDaC'
+  Target: '$(build.artifactstagingdirectory)\$(FolderName)'
+  Artifact: 'DaC'
+  DiagramName: 'gaming_architecture.png'
+  DevopsOrgName: 'ArindamMitra0251'
+  DevopsPrjName: 'AMCLOUD'
+  DevopsRepoName: 'YAML-v1.0'
+  DevOpsGITUser: 'AM'
+  DevOpsGITEmail: 'arindam0310018@gmail.com'
+
+######################
+# Declare Build Agent:-
+######################
+pool:
+  vmImage: '$(BuildAgent)'
+
+#############################
+# Declare Stages:-
+# Generate Diagrams by Code
+#############################
+stages:
+
+- stage: Diagram_As_Code
+  jobs:
+  - job: Diagram_As_Code
+    displayName: Diagram As Code
+    steps:
+    - task: AzureCLI@2
+      displayName: Diagram As Code
+      inputs:
+        azureSubscription: $(ServiceConnection)
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "##########################################################"
+          $choco_ver = choco -v
+          echo "The latest chocolatey version installed is: $choco_ver"
+          echo "##########################################################"
+          python --version
+          echo "#######################################"
+          pip --version
+          echo "#######################################"
+          echo "Installing Graphiz...!"
+          echo "#######################################"
+          choco install graphviz -y
+          echo "#######################################"
+          echo "Validate graphviz Installation..."
+          echo "########################################"
+          sleep 10
+          dot -V
+          echo "########################################"
+          pip install diagrams
+          echo "########################################"
+          cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\
+          dir
+          echo "########################################"
+          python $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\$(pythonCode)   
+          cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\
+          dir
+          $outputPath = "$(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\$(DiagramName)"
+          if (Test-Path $outputPath) {
+             Write-Host "$(DiagramName) created successfully."
+             } 
+          else {
+                Write-Host "$(DiagramName) was NOT created."
+                exit 1
+                }
+          echo "########################################"
+
+###############################################
+# Copy Files to Artifacts Staging Directory:-
+###############################################
+    - task: CopyFiles@2
+      displayName: Copy Files Artifacts Staging Directory
+      inputs:
+        SourceFolder: '$(workingDir)'
+        Contents: |
+          **/*.png
+        TargetFolder: '$(Target)'
+
+# ########################
+# # Publish Artifacts:-
+# ########################
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifacts
+      inputs:
+        targetPath: '$(Target)'
+        artifactName: '$(Artifact)'     
+
+#############################
+# Stage: Commit 2 Code
+#############################
+
+- stage: Commit_2_Git
+  condition: succeeded('Diagram_As_Code')
+  jobs:
+  - deployment: 
+    displayName: Commit_2_Git
+    environment: $(envName)
+    pool:
+      vmImage: '$(BuildAgent)'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self 
+            persistCredentials: true
+
+#########################
+# Download Artifacts:-
+#########################
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Artifacts
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: '$(Artifact)'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+#########################################
+# Commit 2 Git:-
+# Authentication - System Access Token
+#########################################
+          - task: PowerShell@2
+            displayName: GIT Commit 
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Diagrams
+                cp $(System.ArtifactsDirectory)\$(Artifact)\$(FolderName)\$(DiagramName) . 
+                echo "#####################"
+                echo "Diagram copied!"
+                echo "Listing the contents in the current directory:-"
+                dir
+                echo "#####################"
+                git remote -v
+                echo "#####################"
+                git remote set-url origin https://$(System.AccessToken)@dev.azure.com/$(DevopsOrgName)/$(DevopsPrjName)/_git/$(DevopsRepoName)
+                echo "#####################"
+                git ls-remote origin
+                echo "#####################"
+                git config --global user.email "$(DevOpsGITEmail)"
+                git config --global user.name "$(DevOpsGITUser)"
+                git config --global --unset https.proxy
+                git checkout -b main
+                git add .
+                git commit -m "Output Architecture Diagram"
+                git push origin main
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
