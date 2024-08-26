@@ -5,6 +5,13 @@
 # 2. Commit 2 Git.
 ####################################
 
+################################################################################################################################
+# Important to Note:-
+#####################
+# 1. The Consumers only need to change the value which are commented in the "Declare Variables" Section.
+# 2. If you are changing the value of "pythonCode" Variable, then make sure, you change the value of "DiagramName" Variable. 
+################################################################################################################################
+
 trigger:
   none
 
@@ -12,20 +19,23 @@ trigger:
 # Declare Variables:-
 #######################
 variables:
-  ServiceConnection: 'amcloud-cicd-service-connection'
-  BuildAgent: 'windows-latest'
-  envName: 'NonProd'
-  pythonCode: 'Generate-Gaming-Arch-Diagrams.py'
-  WorkingDir: '$(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code'
-  FolderName: 'AMDaC'
-  Target: '$(build.artifactstagingdirectory)\$(FolderName)'
-  Artifact: 'DaC'
-  DiagramName: 'gaming_architecture.png'
-  DevopsOrgName: 'ArindamMitra0251'
-  DevopsPrjName: 'AMCLOUD'
-  DevopsRepoName: 'YAML-v1.0'
-  DevOpsGITUser: 'AM'
-  DevOpsGITEmail: 'arindam0310018@gmail.com'
+  ServiceConnection: 'amcloud-cicd-service-connection' # Please replace with your Service Connection!
+  BuildAgent: 'windows-latest' # Please replace with your Build Agent. You can continue to use this as this is Microsoft Hosted Windows Build Agent!
+  envName: 'NonProd' # Please replace with your Azure Devops Environment Name
+  pythonCode: 'Generate-Basic-Azure-App-service-Arch-Diagram.py' # Please replace with your script name kept in the "Code" Directory! 
+  RootWorkingFolderName: 'Digram-As-Code-With-Devops' # Please replace with your Root Working Folder Name!
+  ChildWorkingFolderName1: 'Code' # Please replace with your Child Working Folder Name!
+  ChildWorkingFolderName2: 'Diagrams' # Please replace with your Child Working Folder Name!
+  WorkingDir: '$(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName1)' 
+  TargetFolderName: 'AMDaC' # Please replace with your naming convention!
+  Target: '$(build.artifactstagingdirectory)\$(TargetFolderName)'
+  Artifact: 'DaC' # Please replace with your naming convention!
+  DiagramName: 'basic_azure_app_service_architecture.png' # Please replace with the name, you have mentioned inside your Python Script!
+  DevopsOrgName: 'ArindamMitra0251' # Please replace with your Azure Devops Organisation Name!
+  DevopsPrjName: 'AMCLOUD' # Please replace with your Azure Devops Project Name!
+  DevopsRepoName: 'YAML-v1.0' # Please replace with your Azure Devops Repository Name!
+  DevOpsGITUser: 'AM' # Please replace with your Custom GIT Username!
+  DevOpsGITEmail: 'arindam0310018@gmail.com' # Please replace with your GIT user email address!
 
 ######################
 # Declare Build Agent:-
@@ -70,13 +80,13 @@ stages:
           echo "########################################"
           pip install diagrams
           echo "########################################"
-          cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\
+          cd $(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName1)\
           dir
           echo "########################################"
-          python $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\$(pythonCode)   
-          cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\
+          python $(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName1)\$(pythonCode)   
+          cd $(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName1)\
           dir
-          $outputPath = "$(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Code\$(DiagramName)"
+          $outputPath = "$(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName1)\$(DiagramName)"
           if (Test-Path $outputPath) {
              Write-Host "$(DiagramName) created successfully."
              } 
@@ -145,8 +155,8 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                cd $(System.DefaultWorkingDirectory)\Digram-As-Code-With-Devops\Diagrams
-                cp $(System.ArtifactsDirectory)\$(Artifact)\$(FolderName)\$(DiagramName) . 
+                cd $(System.DefaultWorkingDirectory)\$(RootWorkingFolderName)\$(ChildWorkingFolderName2)
+                cp $(System.ArtifactsDirectory)\$(Artifact)\$(TargetFolderName)\$(DiagramName) . 
                 echo "#####################"
                 echo "Diagram copied!"
                 echo "Listing the contents in the current directory:-"
@@ -161,9 +171,9 @@ stages:
                 git config --global user.email "$(DevOpsGITEmail)"
                 git config --global user.name "$(DevOpsGITUser)"
                 git config --global --unset https.proxy
-                git checkout -b main
+                git checkout -b $(Build.SourceBranchName)
                 git add .
                 git commit -m "Output Architecture Diagram"
-                git push origin main
+                git push origin $(Build.SourceBranchName)
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
